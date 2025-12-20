@@ -6,7 +6,7 @@ COPY custom /custom
 ###############################################################################
 # PROJECT NAME CONFIGURATION
 ###############################################################################
-# Name: finpilot
+# Name: stamos
 #
 # IMPORTANT: Change "finpilot" above to your desired project name.
 # This name should be used consistently throughout the repository in:
@@ -20,8 +20,9 @@ COPY custom /custom
 # to maintain consistency.
 ###############################################################################
 
-# Base Image
-FROM ghcr.io/ublue-os/bluefin:stable@sha256:c9411d9909708d57d8e87c160a308a4a8c795764fb4beff344340755412b9178
+# Base Image - Fedora version is passed as build arg
+ARG FEDORA_VERSION=43
+FROM quay.io/fedora/fedora-bootc:${FEDORA_VERSION}-x86_64
 
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:latest
@@ -29,7 +30,7 @@ FROM ghcr.io/ublue-os/bluefin:stable@sha256:c9411d9909708d57d8e87c160a308a4a8c79
 # 
 # ... and so on, here are more base images
 # Universal Blue Images: https://github.com/orgs/ublue-os/packages
-# Fedora base image: quay.io/fedora/fedora-bootc:41
+# Fedora base image: quay.io/fedora/fedora-bootc:42/43/44
 # CentOS base images: quay.io/centos-bootc/centos-bootc:stream10
 
 ### /opt

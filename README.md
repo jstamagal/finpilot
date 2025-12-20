@@ -1,8 +1,28 @@
-# finpilot
+# stamos
 
 A template for building custom bootc operating system images based on the lessons from [Universal Blue](https://universal-blue.org/) and [Bluefin](https://projectbluefin.io). It is designed to be used manually, but is optimized to be bootstraped by GitHub Copilot. After set up you'll have your own custom Linux. 
 
 > Be the one who moves, not the one who is moved.
+
+## What Makes this Raptor Different?
+
+Here are the changes from the base finpilot template. This image is based on Fedora bootc and includes these customizations:
+
+### Base Image Changes
+- **Switched from**: `ghcr.io/ublue-os/bluefin:stable` 
+- **Switched to**: Fedora bootc upstream (`quay.io/fedora/fedora-bootc`)
+- **Multi-version support**: Builds for Fedora 42 (gts), 43 (stable), and 44 (unstable)
+
+### Build System Enhancements
+- **Matrix builds**: Automated builds for multiple Fedora versions in parallel
+- **Version tags**: `gts`, `stable`, `unstable` tracks for different user needs
+- **Parameterized builds**: Build-time Fedora version selection via build args
+
+### Project Customization
+- **Renamed**: from `finpilot` to `stamos` across all files
+- **Maintained**: All Bluefin patterns and best practices
+
+*Last updated: 2025-12-18*
 
 ## Guided Copilot Mode
 

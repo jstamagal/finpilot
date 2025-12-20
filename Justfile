@@ -1,4 +1,4 @@
-export image_name := env("IMAGE_NAME", "finpilot")
+export image_name := env("IMAGE_NAME", "stamos")
 export default_tag := env("DEFAULT_TAG", "stable")
 export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest@sha256:903c01d110b8533f8891f07c69c0ba2377f8d4bc7e963311082b7028c04d529d")
 
@@ -86,7 +86,47 @@ sudoif command *args:
 #
 
 # Build the image using the specified parameters
-build $target_image=image_name $tag=default_tag:
+# Arguments:
+#   $target_image - The tag you want to apply to the image (default: $image_name).
+#   $tag - The tag for the image (default: $default_tag).
+#   $fedora_version - The Fedora version to build (default: 43).
+#
+# Example usage:
+#   just build my-image stable 42
+#   just build my-image gts 42
+#   just build my-image unstable 44
+#
+build $target_image=image_name $tag=default_tag $fedora_version="43":
+
+# Build GTS image (Fedora 42)
+[group('Build')]
+build-gts $target_image=image_name:
+    #!/usr/bin/env bash
+    echo "Building GTS image with Fedora 42..."
+    just build {{target_image}} gts 42
+
+# Build stable image (Fedora 43)
+[group('Build')]
+build-stable $target_image=image_name:
+    #!/usr/bin/env bash
+    echo "Building stable image with Fedora 43..."
+    just build {{target_image}} stable 43
+
+# Build unstable image (Fedora 44)
+[group('Build')]
+build-unstable $target_image=image_name:
+    #!/usr/bin/env bash
+    echo "Building unstable image with Fedora 44..."
+    just build {{target_image}} unstable 44
+
+# Build all versions (gts, stable, unstable)
+[group('Build')]
+build-all $target_image=image_name:
+    #!/usr/bin/env bash
+    echo "Building all versions..."
+    just build-gts {{target_image}}
+    just build-stable {{target_image}}
+    just build-unstable {{target_image}}
     #!/usr/bin/env bash
 
     BUILD_ARGS=()
@@ -98,6 +138,7 @@ build $target_image=image_name $tag=default_tag:
         "${BUILD_ARGS[@]}" \
         --pull=newer \
         --tag "${target_image}:${tag}" \
+        --build-arg "FEDORA_VERSION=${fedora_version}" \
         .
 
 # Command: _rootful_load_image
@@ -193,33 +234,34 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
 #   tag: The tag of the image to build (ex. latest)
 #   type: The type of image to build (ex. qcow2, raw, iso)
 #   config: The configuration file to use for the build (deafult: iso/disk.toml)
+#   fedora_version: The Fedora version to build (default: 43)
 
-# Example: just _rebuild-bib localhost/fedora latest qcow2 iso/disk.toml
-_rebuild-bib $target_image $tag $type $config: (build target_image tag) && (_build-bib target_image tag type config)
+# Example: just _rebuild-bib localhost/fedora latest qcow2 iso/disk.toml 42
+_rebuild-bib $target_image $tag $type $config $fedora_version="43": (build target_image tag fedora_version) && (_build-bib target_image tag type config)
 
 # Build a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
-build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "qcow2" "iso/disk.toml")
+build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "qcow2" "iso/disk.toml")
 
 # Build a RAW virtual machine image
 [group('Build Virtal Machine Image')]
-build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "raw" "iso/disk.toml")
+build-raw $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "raw" "iso/disk.toml")
 
 # Build an ISO virtual machine image
 [group('Build Virtal Machine Image')]
-build-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "iso" "iso/iso.toml")
+build-iso $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "iso" "iso/iso.toml")
 
 # Rebuild a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "qcow2" "iso/disk.toml")
+rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "qcow2" "iso/disk.toml" fedora_version)
 
 # Rebuild a RAW virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "raw" "iso/disk.toml")
+rebuild-raw $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "raw" "iso/disk.toml" fedora_version)
 
 # Rebuild an ISO virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "iso" "iso/iso.toml")
+rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "iso" "iso/iso.toml" fedora_version)
 
 # Run a virtual machine with the specified image type and configuration
 _run-vm $target_image $tag $type $config:
