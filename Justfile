@@ -87,47 +87,19 @@ sudoif command *args:
 
 # Build the image using the specified parameters
 # Arguments:
-#   $target_image - The tag you want to apply to the image (default: $image_name).
-#   $tag - The tag for the image (default: $default_tag).
-#   $fedora_version - The Fedora version to build (default: 43).
+#   target_image - The name you want to apply to the image (default: env IMAGE_NAME or "stamos").
+#   tag - The tag for the image (default: env DEFAULT_TAG or "stable").
+#   fedora_version - The Fedora version to build (default: 43).
 #
 # Example usage:
-#   just build my-image stable 42
-#   just build my-image gts 42
-#   just build my-image unstable 44
+#   just build stamos stable 43
+#   just build stamos gts 42
+#   just build stamos unstable 44
 #
-build $target_image=image_name $tag=default_tag $fedora_version="43":
-
-# Build GTS image (Fedora 42)
 [group('Build')]
-build-gts $target_image=image_name:
+build target_image=image_name tag=default_tag fedora_version="43":
     #!/usr/bin/env bash
-    echo "Building GTS image with Fedora 42..."
-    just build {{target_image}} gts 42
-
-# Build stable image (Fedora 43)
-[group('Build')]
-build-stable $target_image=image_name:
-    #!/usr/bin/env bash
-    echo "Building stable image with Fedora 43..."
-    just build {{target_image}} stable 43
-
-# Build unstable image (Fedora 44)
-[group('Build')]
-build-unstable $target_image=image_name:
-    #!/usr/bin/env bash
-    echo "Building unstable image with Fedora 44..."
-    just build {{target_image}} unstable 44
-
-# Build all versions (gts, stable, unstable)
-[group('Build')]
-build-all $target_image=image_name:
-    #!/usr/bin/env bash
-    echo "Building all versions..."
-    just build-gts {{target_image}}
-    just build-stable {{target_image}}
-    just build-unstable {{target_image}}
-    #!/usr/bin/env bash
+    set -eoux pipefail
 
     BUILD_ARGS=()
     if [[ -z "$(git status -s)" ]]; then
@@ -137,9 +109,39 @@ build-all $target_image=image_name:
     podman build \
         "${BUILD_ARGS[@]}" \
         --pull=newer \
-        --tag "${target_image}:${tag}" \
-        --build-arg "FEDORA_VERSION=${fedora_version}" \
+        --tag "{{target_image}}:{{tag}}" \
+        --build-arg "FEDORA_VERSION={{fedora_version}}" \
         .
+
+# Build GTS image (Fedora 42)
+[group('Build')]
+build-gts target_image=image_name:
+    #!/usr/bin/env bash
+    echo "Building GTS image with Fedora 42..."
+    just build {{target_image}} gts 42
+
+# Build stable image (Fedora 43)
+[group('Build')]
+build-stable target_image=image_name:
+    #!/usr/bin/env bash
+    echo "Building stable image with Fedora 43..."
+    just build {{target_image}} stable 43
+
+# Build unstable image (Fedora 44)
+[group('Build')]
+build-unstable target_image=image_name:
+    #!/usr/bin/env bash
+    echo "Building unstable image with Fedora 44..."
+    just build {{target_image}} unstable 44
+
+# Build all versions (gts, stable, unstable)
+[group('Build')]
+build-all target_image=image_name:
+    #!/usr/bin/env bash
+    echo "Building all versions..."
+    just build-gts {{target_image}}
+    just build-stable {{target_image}}
+    just build-unstable {{target_image}}
 
 # Command: _rootful_load_image
 # Description: This script checks if the current user is root or running under sudo. If not, it attempts to resolve the image tag using podman inspect.
