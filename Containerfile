@@ -1,7 +1,12 @@
+ARG FEDORA_VERSION=43
+
 # Allow build scripts to be referenced without being copied into the final image
 FROM scratch AS ctx
 COPY build /build
 COPY custom /custom
+
+# NVIDIA akmods stage
+FROM ghcr.io/ublue-os/akmods-nvidia-open:main-${FEDORA_VERSION} AS akmods-nvidia
 
 ###############################################################################
 # PROJECT NAME CONFIGURATION
@@ -21,8 +26,8 @@ COPY custom /custom
 ###############################################################################
 
 # Base Image - Fedora version is passed as build arg
-ARG FEDORA_VERSION=43
-FROM quay.io/fedora/fedora-bootc:${FEDORA_VERSION}-x86_64
+FROM quay.io/fedora/fedora-bootc:${FEDORA_VERSION}
+COPY --from=akmods-nvidia /rpms /var/tmp/akmods-nvidia
 
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:latest
