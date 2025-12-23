@@ -217,7 +217,7 @@ _build-bib target_image tag type config: (_rootful_load_image target_image tag)
     args+="--use-librepo=True "
     args+="--rootfs=btrfs"
 
-    BUILDTMP=$(mktemp -p "${PWD}" -d -t _build-bib.XXXXXXXXXX)
+    BUILDTMP=$(mktemp -d -t _build-bib.XXXXXXXXXX)
 
     sudo podman run \
       --rm \
