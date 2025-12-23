@@ -160,9 +160,12 @@ build-all target_image=image_name:
 # 3. If the image is found, load it into rootful podman using podman scp.
 # 4. If the image is not found, pull it from the remote repository into reootful podman.
 
-_rootful_load_image $target_image=image_name $tag=default_tag:
+_rootful_load_image target_image=image_name tag=default_tag:
     #!/usr/bin/bash
     set -eoux pipefail
+
+    TARGET_IMAGE="{{target_image}}"
+    TAG="{{tag}}"
 
     # Check if already running as root or under sudo
     if [[ -n "${SUDO_USER:-}" || "${UID}" -eq "0" ]]; then
@@ -172,24 +175,24 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
 
     # Try to resolve the image tag using podman inspect
     set +e
-    resolved_tag=$(podman inspect -t image "${target_image}:${tag}" | jq -r '.[].RepoTags.[0]')
+    resolved_tag=$(podman inspect -t image "${TARGET_IMAGE}:${TAG}" | jq -r '.[].RepoTags.[0]')
     return_code=$?
     set -e
 
-    USER_IMG_ID=$(podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
+    USER_IMG_ID=$(podman images --filter reference="${TARGET_IMAGE}:${TAG}" --format "'{{ '{{.ID}}' }}'")
 
     if [[ $return_code -eq 0 ]]; then
         # If the image is found, load it into rootful podman
-        ID=$(just sudoif podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
+        ID=$(just sudoif podman images --filter reference="${TARGET_IMAGE}:${TAG}" --format "'{{ '{{.ID}}' }}'")
         if [[ "$ID" != "$USER_IMG_ID" ]]; then
             # If the image ID is not found or different from user, copy the image from user podman to root podman
             COPYTMP=$(mktemp -p "${PWD}" -d -t _build_podman_scp.XXXXXXXXXX)
-            just sudoif TMPDIR=${COPYTMP} podman image scp ${UID}@localhost::"${target_image}:${tag}" root@localhost::"${target_image}:${tag}"
+            just sudoif TMPDIR=${COPYTMP} podman image scp ${UID}@localhost::"${TARGET_IMAGE}:${TAG}" root@localhost::"${TARGET_IMAGE}:${TAG}"
             rm -rf "${COPYTMP}"
         fi
     else
         # If the image is not found, pull it from the repository
-        just sudoif podman pull "${target_image}:${tag}"
+        just sudoif podman pull "${TARGET_IMAGE}:${TAG}"
     fi
 
 # Build a bootc bootable image using Bootc Image Builder (BIB)
@@ -201,7 +204,7 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
 #   config: The configuration file to use for the build (default: iso/disk.toml)
 
 # Example: just _rebuild-bib localhost/fedora latest qcow2 iso/disk.toml
-_build-bib $target_image $tag $type $config: (_rootful_load_image target_image tag)
+_build-bib target_image tag type config: (_rootful_load_image target_image tag)
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -239,7 +242,7 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
 #   fedora_version: The Fedora version to build (default: 43)
 
 # Example: just _rebuild-bib localhost/fedora latest qcow2 iso/disk.toml 42
-_rebuild-bib $target_image $tag $type $config $fedora_version="43": (build target_image tag fedora_version) && (_build-bib target_image tag type config)
+_rebuild-bib target_image tag type config fedora_version="43": (build target_image tag fedora_version) && (_build-bib target_image tag type config)
 
 # Build a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
@@ -247,11 +250,11 @@ build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag $fedora_v
 
 # Build a RAW virtual machine image
 [group('Build Virtal Machine Image')]
-build-raw $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "raw" "iso/disk.toml")
+build-raw target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "raw" "iso/disk.toml")
 
 # Build an ISO virtual machine image
 [group('Build Virtal Machine Image')]
-build-iso $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "iso" "iso/iso.toml")
+build-iso target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "iso" "iso/iso.toml")
 
 # Rebuild a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
@@ -259,14 +262,14 @@ rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag $fedora
 
 # Rebuild a RAW virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-raw $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "raw" "iso/disk.toml" fedora_version)
+rebuild-raw target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "raw" "iso/disk.toml" fedora_version)
 
 # Rebuild an ISO virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "iso" "iso/iso.toml" fedora_version)
+rebuild-iso target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "iso" "iso/iso.toml" fedora_version)
 
 # Run a virtual machine with the specified image type and configuration
-_run-vm $target_image $tag $type $config:
+_run-vm target_image tag type config:
     #!/usr/bin/bash
     set -eoux pipefail
 
@@ -313,11 +316,11 @@ run-vm-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_ru
 
 # Run a virtual machine from a RAW image
 [group('Run Virtal Machine')]
-run-vm-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "raw" "iso/disk.toml")
+run-vm-raw target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "raw" "iso/disk.toml")
 
 # Run a virtual machine from an ISO
 [group('Run Virtal Machine')]
-run-vm-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "iso" "iso/iso.toml")
+run-vm-iso target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "iso" "iso/iso.toml")
 
 # Run a virtual machine using systemd-vmspawn
 [group('Run Virtal Machine')]
