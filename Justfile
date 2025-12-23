@@ -208,7 +208,12 @@ _build-bib target_image tag type config: (_rootful_load_image target_image tag)
     #!/usr/bin/env bash
     set -euo pipefail
 
-    args="--type ${type} "
+    TARGET_IMAGE="{{target_image}}"
+    TAG="{{tag}}"
+    TYPE="{{type}}"
+    CONFIG="{{config}}"
+
+    args="--type ${TYPE} "
     args+="--use-librepo=True "
     args+="--rootfs=btrfs"
 
@@ -221,12 +226,12 @@ _build-bib target_image tag type config: (_rootful_load_image target_image tag)
       --pull=newer \
       --net=host \
       --security-opt label=type:unconfined_t \
-      -v $(pwd)/${config}:/config.toml:ro \
+      -v $(pwd)/${CONFIG}:/config.toml:ro \
       -v $BUILDTMP:/output \
       -v /var/lib/containers/storage:/var/lib/containers/storage \
-      "${bib_image}" \
+      "{{bib_image}}" \
       ${args} \
-      "${target_image}:${tag}"
+      "${TARGET_IMAGE}:${TAG}"
 
     mkdir -p output
     sudo mv -f $BUILDTMP/* output/
@@ -246,42 +251,46 @@ _rebuild-bib target_image tag type config fedora_version="43": (build target_ima
 
 # Build a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
-build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "qcow2" "iso/disk.toml")
+build-qcow2 target_image=("localhost/" + image_name) tag=default_tag fedora_version="43": && (_build-bib target_image tag "qcow2" "iso/disk.toml")
 
 # Build a RAW virtual machine image
 [group('Build Virtal Machine Image')]
-build-raw target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "raw" "iso/disk.toml")
+build-raw target_image=("localhost/" + image_name) tag=default_tag fedora_version="43": && (_build-bib target_image tag "raw" "iso/disk.toml")
 
 # Build an ISO virtual machine image
 [group('Build Virtal Machine Image')]
-build-iso target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_build-bib target_image tag "iso" "iso/iso.toml")
+build-iso target_image=("localhost/" + image_name) tag=default_tag fedora_version="43": && (_build-bib target_image tag "iso" "iso/iso.toml")
 
 # Rebuild a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "qcow2" "iso/disk.toml" fedora_version)
+rebuild-qcow2 target_image=("localhost/" + image_name) tag=default_tag fedora_version="43": && (_rebuild-bib target_image tag "qcow2" "iso/disk.toml" fedora_version)
 
 # Rebuild a RAW virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-raw target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "raw" "iso/disk.toml" fedora_version)
+rebuild-raw target_image=("localhost/" + image_name) tag=default_tag fedora_version="43": && (_rebuild-bib target_image tag "raw" "iso/disk.toml" fedora_version)
 
 # Rebuild an ISO virtual machine image
 [group('Build Virtal Machine Image')]
-rebuild-iso target_image=("localhost/" + image_name) $tag=default_tag $fedora_version="43": && (_rebuild-bib target_image tag "iso" "iso/iso.toml" fedora_version)
+rebuild-iso target_image=("localhost/" + image_name) tag=default_tag fedora_version="43": && (_rebuild-bib target_image tag "iso" "iso/iso.toml" fedora_version)
 
 # Run a virtual machine with the specified image type and configuration
 _run-vm target_image tag type config:
     #!/usr/bin/bash
     set -eoux pipefail
 
+    TARGET_IMAGE="{{target_image}}"
+    TAG="{{tag}}"
+    TYPE="{{type}}"
+
     # Determine the image file based on the type
-    image_file="output/${type}/disk.${type}"
-    if [[ $type == iso ]]; then
+    image_file="output/${TYPE}/disk.${TYPE}"
+    if [[ $TYPE == iso ]]; then
         image_file="output/bootiso/install.iso"
     fi
 
     # Build the image if it does not exist
     if [[ ! -f "${image_file}" ]]; then
-        just "build-${type}" "$target_image" "$tag"
+        just "build-${TYPE}" "$TARGET_IMAGE" "$TAG"
     fi
 
     # Determine an available port to use
@@ -312,15 +321,15 @@ _run-vm target_image tag type config:
 
 # Run a virtual machine from a QCOW2 image
 [group('Run Virtal Machine')]
-run-vm-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "qcow2" "iso/disk.toml")
+run-vm-qcow2 target_image=("localhost/" + image_name) tag=default_tag: && (_run-vm target_image tag "qcow2" "iso/disk.toml")
 
 # Run a virtual machine from a RAW image
 [group('Run Virtal Machine')]
-run-vm-raw target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "raw" "iso/disk.toml")
+run-vm-raw target_image=("localhost/" + image_name) tag=default_tag: && (_run-vm target_image tag "raw" "iso/disk.toml")
 
 # Run a virtual machine from an ISO
 [group('Run Virtal Machine')]
-run-vm-iso target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "iso" "iso/iso.toml")
+run-vm-iso target_image=("localhost/" + image_name) tag=default_tag: && (_run-vm target_image tag "iso" "iso/iso.toml")
 
 # Run a virtual machine using systemd-vmspawn
 [group('Run Virtal Machine')]
